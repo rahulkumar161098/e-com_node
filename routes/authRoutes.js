@@ -1,6 +1,6 @@
 const express= require('express');
 const router= express.Router();
-const {createUser, loginUser, getAllUser, getUser, deleteUser, updateUser, blockUser, unblockUser, handleCookie, logOut}= require('../controller/userCtrl');
+const {createUser, loginUser, getAllUser, getUser, deleteUser, updateUser, blockUser, unblockUser, handleCookie, logOut, changePassword}= require('../controller/userCtrl');
 const { authmiddleware, isAdmin } = require('../middleware/authmiddleware');
 
 router.post('/register', createUser);
@@ -13,6 +13,8 @@ router.delete('/:id', deleteUser);
 router.put('/edit_user',authmiddleware, updateUser);
 router.put('/block_user/:id',authmiddleware, isAdmin, blockUser);
 router.put('/unblock_user/:id',authmiddleware, isAdmin, unblockUser);
+
+router.put('/resetPassword', authmiddleware, changePassword)
 
 
 module.exports= router; 

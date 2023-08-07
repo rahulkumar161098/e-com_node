@@ -28,22 +28,24 @@ var productSchema = new mongoose.Schema(
     },
     brand: {
       type: String,
-      enum: ["Apple", "Samsung", "Lenovo"],
+      required: true
     },
     quantity: {
       type: Number,
-      required: true
+      required: true,
+      select: false,
     },
     sold: {
       type: Number,
       default: 0,
+      select: false, // hide from user
     },
     image: {
       type: Array,
     },
     color: {
       type: String,
-      enum: ["Red", "Blue", "Green"],
+      required: true
     },
     ratings: [
       {

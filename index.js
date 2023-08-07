@@ -18,6 +18,7 @@ app.use(cookieParser());
 dbConnect()
 // app.use(bodyParser.json)
 // app.use(bodyParser.urlencoded({extended: false}))
+app.use(morgon("dev"))
 app.use(express.json())
 
 app.get('/', (req, res)=>{
@@ -32,7 +33,7 @@ app.use('/api/product', productRouter)
 // middleware
 app.use(notFound)
 app.use(errorHandler)
-app.use(morgon("dev"))
+
 
 app.listen(port,()=>{
     console.log(`this server is running on ${port}`);

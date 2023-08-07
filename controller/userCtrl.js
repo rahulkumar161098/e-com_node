@@ -27,7 +27,7 @@ const createUser = asyncHandler(async (req, res) => {
   }
 });
 
-// user a Login
+// user Login
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   // console.log({email, password});
@@ -217,6 +217,30 @@ const unblockUser = asyncHandler(async (req, res) => {
   }
 });
 
+// change password
+const changePassword = asyncHandler(async(req, res)=>{
+  console.log('user=>',req.user);
+  const {_id}= req.user;
+  const {password}= req.body;
+  validateId(_id)
+  const user= await User.findById(_id)
+  if(password){
+    console.log(user.password);
+    user.password= password
+    const updatePassword = await user.save()
+    res.json(updatePassword)
+  }
+  else{
+    res.json(user)
+  }
+  // console.log(user);
+})
+
+// forget password
+const forgetPassword= asyncHandler(async(req, res)=>{
+  
+})
+
 module.exports = {
   createUser,
   loginUser,
@@ -228,4 +252,5 @@ module.exports = {
   unblockUser,
   handleCookie,
   logOut,
+  changePassword
 };
