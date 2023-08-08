@@ -6,6 +6,7 @@ const validateId = require("../utils/validateMongoId");
 const generateRefreshToken = require("../config/refreshToken");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("./mailCtrl");
+const crypto= require('crypto');
 
 // create a user
 const createUser = asyncHandler(async (req, res) => {
@@ -242,7 +243,7 @@ const forgetPasswordToken = asyncHandler(async (req, res) => {
     throw new Error("User not found with this email");
   }
   try {
-    const token = await user.createPasswordResetToken();
+    const token =  user.createPasswordResetToken();
     await user.save();
     const generateUrl = `
     Hi, Please follow this link to forget your password. This link valid for 10 mins <br> <br>
@@ -261,6 +262,28 @@ const forgetPasswordToken = asyncHandler(async (req, res) => {
   }
 });
 
+// reset password
+
+const resetPassword= asyncHandler(async(req, res)=> {
+  const { password }= req.body;
+  const { token }= req.params;
+  const hashToken= crypto.createHash('sha256').update(token).digest('hex');
+  // find the user based on the token sent in the request
+  const user= await User.findOne({
+    passwordResetToken: token,
+    passwordResetExpair: {$gt: Date.now()}
+  })
+  if(!user){
+    throw new Error("Token Expired, Please try again leter !")
+  }
+  user.password= password
+  user.passwordResetToken= undefined;
+  user.passwordResetExpair= undefined;
+  await user.save()
+  res.json({user})
+
+})
+
 module.exports = {
   createUser,
   loginUser,
@@ -274,4 +297,5 @@ module.exports = {
   logOut,
   changePassword,
   forgetPasswordToken,
+  resetPassword
 };
