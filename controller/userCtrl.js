@@ -4,7 +4,8 @@ const User = require("../models/userModel");
 const asyncHandler = require("express-async-handler");
 const validateId = require("../utils/validateMongoId");
 const generateRefreshToken = require("../config/refreshToken");
-const jwt = require('jsonwebtoken')
+const jwt = require("jsonwebtoken");
+const sendEmail = require("./mailCtrl");
 
 // create a user
 const createUser = asyncHandler(async (req, res) => {
@@ -33,22 +34,21 @@ const loginUser = asyncHandler(async (req, res) => {
   // console.log({email, password});
   const findUser = await User.findOne({ email });
   if (findUser && (await findUser.isPasswordMatched(password))) {
-    const refreshToken= await generateRefreshToken(findUser?.id)
-    const updateUser= await User.findByIdAndUpdate(
-      findUser.id,{
-        refreshToken: refreshToken
+    const refreshToken = await generateRefreshToken(findUser?.id);
+    const updateUser = await User.findByIdAndUpdate(
+      findUser.id,
+      {
+        refreshToken: refreshToken,
       },
       {
-        new : true
+        new: true,
       }
     );
     // set cookie
-    res.cookie(
-      "refreshToken", refreshToken,{
-        httpOnly:true,
-        maxAge: 72*60*60*1000
-      }
-    )
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 72 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       _id: findUser?._id,
@@ -65,55 +65,54 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 // handle cookie
-const handleCookie = asyncHandler(async (req, res)=>{
-  const cookie= req.cookies;
+const handleCookie = asyncHandler(async (req, res) => {
+  const cookie = req.cookies;
   // console.log(cookie);
-  if(!cookie.refreshToken) throw new Error("No Refresh Token in Cookies")
-  const refreshToken= cookie.refreshToken;
+  if (!cookie.refreshToken) throw new Error("No Refresh Token in Cookies");
+  const refreshToken = cookie.refreshToken;
   console.log(refreshToken);
   // find user
-  const user= await User.findOne({refreshToken})
-  if(!user) throw new Error("No Refresh Token in db or Not Matched")
+  const user = await User.findOne({ refreshToken });
+  if (!user) throw new Error("No Refresh Token in db or Not Matched");
   // res.send(user)
-  jwt.verify(refreshToken, process.env.JWT, (err, decode) =>{
-    if(err || user.id !== decode.id){
-      throw new Error("There is something went wromg with refresh token")
+  jwt.verify(refreshToken, process.env.JWT, (err, decode) => {
+    if (err || user.id !== decode.id) {
+      throw new Error("There is something went wromg with refresh token");
     }
-    const accessToekn= generateToken(user?._id)
-    res.json({accessToekn})
-  })
-
-})
+    const accessToekn = generateToken(user?._id);
+    res.json({ accessToekn });
+  });
+});
 
 // logout a user
-const logOut = asyncHandler( async(req,res)=>{
-  const cookie= req.cookies;
+const logOut = asyncHandler(async (req, res) => {
+  const cookie = req.cookies;
   // console.log(cookie);
-  if(!cookie.refreshToken) throw new Error("No Refresh Token in Cookies")
-  const {refreshToken}= cookie.refreshToken;
-  const user= await User.findOne({refreshToken})
+  if (!cookie.refreshToken) throw new Error("No Refresh Token in Cookies");
+  const { refreshToken } = cookie.refreshToken;
+  const user = await User.findOne({ refreshToken });
   console.log(user);
-  if (!user ){
-    res.clearCookie("refreshToken",{
+  if (!user) {
+    res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true
+      secure: true,
     });
-    return res.sendStatus(204) //forbiden
+    return res.sendStatus(204); //forbiden
   }
   await User.findOneAndUpdate(refreshToken, {
-    refreshToken:"",
+    refreshToken: "",
   });
-  res.clearCookie("refreshToken",{
+  res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: true
+    secure: true,
   });
-  res.sendStatus(204)
-})
+  res.sendStatus(204);
+});
 
 // update a user
 const updateUser = asyncHandler(async (req, res) => {
   let { _id } = req.user;
-  validateId(_id)
+  validateId(_id);
   try {
     const updateUser = await User.findByIdAndUpdate(
       _id,
@@ -146,7 +145,7 @@ const getAllUser = asyncHandler(async (req, res) => {
 // get single user
 const getUser = asyncHandler(async (req, res) => {
   let { id } = req.params;
-  validateId(id)
+  validateId(id);
   try {
     const user = await User.findById(id);
     res.status(200).json(user);
@@ -161,7 +160,7 @@ const getUser = asyncHandler(async (req, res) => {
 // delete single user
 const deleteUser = asyncHandler(async (req, res) => {
   let { id } = req.params;
-  validateId(id)
+  validateId(id);
   try {
     const deluser = await User.findByIdAndDelete(id);
     res.status(200).json(deluser);
@@ -176,7 +175,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 // block user
 const blockUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  validateId(id)
+  validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -198,7 +197,7 @@ const blockUser = asyncHandler(async (req, res) => {
 // unblock user
 const unblockUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  validateId(id)
+  validateId(id);
   try {
     const block = await User.findByIdAndUpdate(
       id,
@@ -218,28 +217,49 @@ const unblockUser = asyncHandler(async (req, res) => {
 });
 
 // change password
-const changePassword = asyncHandler(async(req, res)=>{
-  console.log('user=>',req.user);
-  const {_id}= req.user;
-  const {password}= req.body;
-  validateId(_id)
-  const user= await User.findById(_id)
-  if(password){
+const changePassword = asyncHandler(async (req, res) => {
+  console.log("user=>", req.user);
+  const { _id } = req.user;
+  const { password } = req.body;
+  validateId(_id);
+  const user = await User.findById(_id);
+  if (password) {
     console.log(user.password);
-    user.password= password
-    const updatePassword = await user.save()
-    res.json(updatePassword)
-  }
-  else{
-    res.json(user)
+    user.password = password;
+    const updatePassword = await user.save();
+    res.json(updatePassword);
+  } else {
+    res.json(user);
   }
   // console.log(user);
-})
+});
 
 // forget password
-const forgetPassword= asyncHandler(async(req, res)=>{
-  
-})
+const forgetPasswordToken = asyncHandler(async (req, res) => {
+  const { email } = req.user;
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error("User not found with this email");
+  }
+  try {
+    const token = await user.createPasswordResetToken();
+    await user.save();
+    const generateUrl = `
+    Hi, Please follow this link to forget your password. This link valid for 10 mins <br> <br>
+    <b><a href='http://localhost:5000/api/user/reset-password/${token}'>Click here</a></b>
+    `;
+    const data = {
+      to: email,
+      subject: " Password Forget Link",
+      text: "Hey User, ",
+      html: generateUrl,
+    };
+    sendEmail(data);
+    res.send(token);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 
 module.exports = {
   createUser,
@@ -252,5 +272,6 @@ module.exports = {
   unblockUser,
   handleCookie,
   logOut,
-  changePassword
+  changePassword,
+  forgetPasswordToken,
 };
