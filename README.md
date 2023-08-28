@@ -1,6 +1,6 @@
-# Git-Folks
+# E-commerse Node
 
-This Project we are starting for the folks who wants contribute in open source and looking for community to join if you want to know more about for the project connect with [Avi](https://twitter.com/avi_gupta1302) on twitter
+This Project we are starting for the folks who wants contribute in open source and looking for community to join if you want to know more about for the project connect with Team on twitter
 
 # Table of Contents
 
